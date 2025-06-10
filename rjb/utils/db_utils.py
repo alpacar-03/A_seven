@@ -116,4 +116,72 @@ class DatabaseManager:
                 }
             return None
         finally:
+            conn.close()
+
+    def get_all_users(self, role_filter=None):
+        """获取所有用户信息"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            if role_filter:
+                cursor.execute('''
+                    SELECT id, username, role, name, email, created_at
+                    FROM users WHERE role = ?
+                    ORDER BY created_at DESC
+                ''', (role_filter,))
+            else:
+                cursor.execute('''
+                    SELECT id, username, role, name, email, created_at
+                    FROM users
+                    ORDER BY created_at DESC
+                ''')
+            
+            users = []
+            for row in cursor.fetchall():
+                users.append({
+                    'id': row[0],
+                    'username': row[1],
+                    'role': row[2],
+                    'name': row[3],
+                    'email': row[4],
+                    'created_at': row[5]
+                })
+            return users
+        finally:
+            conn.close()
+
+    def reset_user_password(self, username):
+        """重置用户密码为默认密码123456"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            default_password = self.hash_password('123456')
+            cursor.execute('''
+                UPDATE users SET password = ?
+                WHERE username = ?
+            ''', (default_password, username))
+            
+            conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            print(f"重置密码失败: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def delete_user(self, username):
+        """删除用户"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('DELETE FROM users WHERE username = ?', (username,))
+            conn.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            print(f"删除用户失败: {e}")
+            return False
+        finally:
             conn.close() 
