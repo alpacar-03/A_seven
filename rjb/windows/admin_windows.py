@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QFrame, QSizePolicy
+    QFrame, QSizePolicy, QGroupBox, QLineEdit, QProgressBar, QCheckBox
 )
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtCore import Qt
+import time
 
 class AdminWindow(QWidget):
     def __init__(self):
@@ -186,3 +187,143 @@ class AdminWindow(QWidget):
     def show_data_backup(self):
         # TODO: 实现数据备份功能
         pass 
+        """显示数据备份窗口"""
+        self.backup_window = QWidget()
+        self.backup_window.setWindowTitle('数据备份')
+        self.backup_window.resize(600, 400)
+
+        # 主布局
+        main_layout = QVBoxLayout(self.backup_window)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(15)
+
+        # 标题
+        title_label = QLabel('数据备份系统')
+        title_label.setStyleSheet('font-size: 20px; font-weight: bold; color: #2c3e50;')
+        title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title_label)
+
+        # 备份源选择区域
+        source_group = QGroupBox('备份源')
+        source_layout = QVBoxLayout(source_group)
+        
+        self.source_path_edit = QLineEdit()
+        self.source_path_edit.setPlaceholderText('请选择要备份的目录或文件')
+        
+        source_btn_layout = QHBoxLayout()
+        select_file_btn = QPushButton('选择文件')
+        select_file_btn.setStyleSheet('background-color: #3498db; color: white; padding: 8px;')
+        select_file_btn.clicked.connect(self.select_backup_source_file)
+        
+        select_dir_btn = QPushButton('选择目录')
+        select_dir_btn.setStyleSheet('background-color: #3498db; color: white; padding: 8px;')
+        select_dir_btn.clicked.connect(self.select_backup_source_dir)
+        
+        source_btn_layout.addWidget(select_file_btn)
+        source_btn_layout.addWidget(select_dir_btn)
+        
+        source_layout.addWidget(self.source_path_edit)
+        source_layout.addLayout(source_btn_layout)
+        main_layout.addWidget(source_group)
+
+        # 备份目标区域
+        target_group = QGroupBox('备份目标')
+        target_layout = QVBoxLayout(target_group)
+        
+        self.target_path_edit = QLineEdit()
+        self.target_path_edit.setPlaceholderText('请选择备份保存位置')
+        
+        select_target_btn = QPushButton('选择位置')
+        select_target_btn.setStyleSheet('background-color: #3498db; color: white; padding: 8px;')
+        select_target_btn.clicked.connect(self.select_backup_target)
+        
+        target_layout.addWidget(self.target_path_edit)
+        target_layout.addWidget(select_target_btn)
+        main_layout.addWidget(target_group)
+
+        # 备份选项
+        options_group = QGroupBox('备份选项')
+        options_layout = QVBoxLayout(options_group)
+        
+        self.compress_checkbox = QCheckBox('压缩备份文件')
+        self.compress_checkbox.setChecked(True)
+        
+        self.timestamp_checkbox = QCheckBox('添加时间戳')
+        self.timestamp_checkbox.setChecked(True)
+        
+        options_layout.addWidget(self.compress_checkbox)
+        options_layout.addWidget(self.timestamp_checkbox)
+        main_layout.addWidget(options_group)
+
+        # 进度条
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setStyleSheet('QProgressBar { height: 20px; }')
+        main_layout.addWidget(self.progress_bar)
+
+        # 操作按钮
+        btn_layout = QHBoxLayout()
+        
+        backup_btn = QPushButton('开始备份')
+        backup_btn.setStyleSheet('background-color: #2ecc71; color: white; padding: 10px;')
+        backup_btn.clicked.connect(self.start_backup)
+        
+        cancel_btn = QPushButton('取消')
+        cancel_btn.setStyleSheet('background-color: #e74c3c; color: white; padding: 10px;')
+        cancel_btn.clicked.connect(self.backup_window.close)
+        
+        btn_layout.addWidget(backup_btn)
+        btn_layout.addWidget(cancel_btn)
+        main_layout.addLayout(btn_layout)
+
+        self.backup_window.show()
+
+    def select_backup_source_file(self):
+        """选择备份源文件"""
+        file_path, _ = QFileDialog.getOpenFileName(self.backup_window, '选择备份文件', '', 'All Files (*)')
+        if file_path:
+            self.source_path_edit.setText(file_path)
+
+    def select_backup_source_dir(self):
+        """选择备份源目录"""
+        dir_path = QFileDialog.getExistingDirectory(self.backup_window, '选择备份目录')
+        if dir_path:
+            self.source_path_edit.setText(dir_path)
+
+    def select_backup_target(self):
+        """选择备份目标位置"""
+        dir_path = QFileDialog.getExistingDirectory(self.backup_window, '选择备份保存位置')
+        if dir_path:
+            self.target_path_edit.setText(dir_path)
+
+    def start_backup(self):
+        """开始备份操作"""
+        source_path = self.source_path_edit.text()
+        target_path = self.target_path_edit.text()
+        
+        if not source_path or not target_path:
+            QMessageBox.warning(self.backup_window, '错误', '请先选择备份源和目标路径')
+            return
+        
+        # 模拟备份过程
+        self.progress_bar.setValue(0)
+        for i in range(1, 101):
+            time.sleep(0.05)  # 模拟耗时操作
+            self.progress_bar.setValue(i)
+            QApplication.processEvents()  # 更新UI
+        
+        # 生成备份文件名
+        backup_name = 'backup'
+        if self.timestamp_checkbox.isChecked():
+            backup_name += '_' + time.strftime('%Y%m%d_%H%M%S')
+        
+        if self.compress_checkbox.isChecked():
+            backup_name += '.zip'
+            # 这里应该添加实际压缩代码
+            QMessageBox.information(self.backup_window, '完成', f'备份已完成，保存为: {backup_name}')
+        else:
+            # 这里应该添加实际文件复制代码
+            QMessageBox.information(self.backup_window, '完成', '备份已完成')
+        
+        self.progress_bar.setValue(0) 
