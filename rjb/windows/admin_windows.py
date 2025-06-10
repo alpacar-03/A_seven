@@ -2,10 +2,11 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QFrame, QSizePolicy, QTableWidget, QTableWidgetItem, QComboBox,
     QMessageBox, QHeaderView, QFileDialog, QTreeWidget, QTreeWidgetItem,
-    QDialog, QTextEdit
+    QDialog, QTextEdit,QGroupBox, QLineEdit, QProgressBar, QCheckBox
 )
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtCore import Qt
+import time
 import os
 import shutil
 from datetime import datetime
@@ -686,3 +687,4 @@ class ResourceManagementWindow(QWidget):
             path_parts.insert(0, item.text(0))
             item = item.parent()
         return os.path.join(self.current_path, *path_parts)
+
