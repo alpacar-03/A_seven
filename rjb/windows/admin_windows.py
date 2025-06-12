@@ -10,6 +10,7 @@ import time
 import os
 import shutil
 from datetime import datetime
+import json
 
 from rjb.utils.db_utils import DatabaseManager
 from rjb.utils.file_utils import read_file_content
@@ -201,8 +202,12 @@ class AdminWindow(QWidget):
             self.resource_management_window.raise_()
 
     def show_data_backup(self):
-        # TODO: 实现数据备份功能
-        pass
+        if not hasattr(self, 'data_backup_window') or not self.data_backup_window.isVisible():
+            self.data_backup_window = DataBackupWindow()
+            self.data_backup_window.show()
+        else:
+            self.data_backup_window.activateWindow()
+            self.data_backup_window.raise_()
 
 class UserManagementWindow(QWidget):
     def __init__(self):
@@ -687,4 +692,181 @@ class ResourceManagementWindow(QWidget):
             path_parts.insert(0, item.text(0))
             item = item.parent()
         return os.path.join(self.current_path, *path_parts)
+class DataBackupWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.db_manager = DatabaseManager()
+        self.init_ui()
 
+    def init_ui(self):
+        self.setWindowTitle('大屏概览')
+        self.resize(1200, 800)
+
+        # 主布局
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(20)
+
+        # 标题
+        title_label = QLabel('大屏概览 - 数据备份')
+        title_label.setStyleSheet('''
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        ''')
+        title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title_label)
+
+        # 数据统计区域
+        stats_group = QGroupBox('数据统计')
+        stats_group.setStyleSheet('''
+            QGroupBox {
+                font-size: 16px;
+                font-weight: bold;
+                border: 2px solid #3498db;
+                border-radius: 5px;
+                margin-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 3px;
+            }
+        ''')
+        stats_layout = QVBoxLayout()
+        stats_layout.setSpacing(15)
+
+        # 教师使用次数统计
+        teacher_stats = self.create_stat_card('教师使用次数统计', '👨‍🏫', '#9b59b6')
+        stats_layout.addWidget(teacher_stats)
+        
+        # 学生使用次数统计
+        student_stats = self.create_stat_card('学生使用次数统计', '👨‍🎓', '#3498db')
+        stats_layout.addWidget(student_stats)
+
+        # 教学效率指数
+        efficiency_stats = self.create_stat_card('教学效率指数', '📊', '#e67e22')
+        stats_layout.addWidget(efficiency_stats)
+
+        # 学生学习效果
+        learning_stats = self.create_stat_card('学生学习效果', '📚', '#16a085')
+        stats_layout.addWidget(learning_stats)
+
+        stats_group.setLayout(stats_layout)
+        main_layout.addWidget(stats_group)
+
+        # 导出按钮
+        export_btn = QPushButton('导出数据')
+        export_btn.setStyleSheet('''
+            QPushButton {
+                padding: 10px 20px;
+                background-color: #27ae60;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #219a52;
+            }
+        ''')
+        export_btn.clicked.connect(self.export_data)
+        main_layout.addWidget(export_btn, alignment=Qt.AlignRight)
+
+        self.setLayout(main_layout)
+
+        # 设置窗口背景色
+        palette = QPalette()
+        palette.setColor(QPalette.Window, QColor(240, 240, 240))
+        self.setPalette(palette)
+
+        # 加载数据
+        self.load_data()
+
+    def create_stat_card(self, title, icon, color):
+        card = QFrame()
+        card.setStyleSheet(f'''
+            QFrame {{
+                background-color: white;
+                border: 2px solid {color};
+                border-radius: 10px;
+                padding: 15px;
+            }}
+        ''')
+
+        layout = QHBoxLayout()
+        layout.setSpacing(15)
+
+        # 图标
+        icon_label = QLabel(icon)
+        icon_label.setStyleSheet(f'''
+            font-size: 24px;
+            color: {color};
+        ''')
+        layout.addWidget(icon_label)
+       # 文本区域
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(5)
+
+        # 标题
+        title_label = QLabel(title)
+        title_label.setStyleSheet('''
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        ''')
+        text_layout.addWidget(title_label)
+
+        # 数据占位符
+        data_label = QLabel('加载中...')
+        data_label.setStyleSheet('''
+            font-size: 14px;
+            color: #7f8c8d;
+        ''')
+        text_layout.addWidget(data_label)
+
+        layout.addLayout(text_layout)
+        layout.addStretch()
+        card.setLayout(layout)
+
+        return card
+
+    def load_data(self):
+        # 模拟加载数据
+        # TODO: 替换为实际数据库查询
+        teacher_data = "当日: 120次 | 本周: 850次"
+        student_data = "当日: 450次 | 本周: 3200次"
+        efficiency_data = "备课耗时: 2.5h/课 | 练习修正耗时: 1.2h/课"
+        learning_data = "平均正确率: 78% | 高频错误: 知识点A, 知识点B"
+
+        # 更新UI
+        for i, data in enumerate([teacher_data, student_data, efficiency_data, learning_data]):
+            card = self.findChild(QFrame, f'stat_card_{i}')
+            if card:
+                data_label = card.findChild(QLabel, 'data_label')
+                if data_label:
+                    data_label.setText(data)
+
+    def export_data(self):
+        try:
+            # 选择导出目录
+            export_dir = QFileDialog.getExistingDirectory(self, '选择导出目录')
+            if not export_dir:
+                return
+                
+            # 模拟导出数据
+            export_path = os.path.join(export_dir, 'data_backup.json')
+            data = {
+                "teacher_stats": "当日: 120次 | 本周: 850次",
+                "student_stats": "当日: 450次 | 本周: 3200次",
+                "efficiency_stats": "备课耗时: 2.5h/课 | 练习修正耗时: 1.2h/课",
+                "learning_stats": "平均正确率: 78% | 高频错误: 知识点A, 知识点B"
+            }
+
+            with open(export_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+
+            QMessageBox.information(self, '成功', f'数据已导出至: {export_path}')
+        except Exception as e:
+            QMessageBox.critical(self, '错误', f'导出数据失败: {str(e)}')
